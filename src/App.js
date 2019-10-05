@@ -1,26 +1,68 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import { Switch, Route, Redirect } from 'react-router-dom';
+import { AuthContext } from './AuthProvider';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const HomePage = () => (
+	<AuthContext>
+	{({ signOut }) => (
+		<div>
+			<h1>Welcome !</h1>
+			<button onClick={signOut}>LOGOUT</button>
+		</div>
+	)}
+	</AuthContext>
+);
+
+const LoginPage = () => {
+	const [username, setUsername] = useState('admin');
+	const [password, setPassword] = useState('admin');
+
+	return (
+		<AuthContext>
+			{({ error, user, signIn }) => {
+				if (user) {
+					return <Redirect to="/" />;
+				} 
+				const onSubmit = (e) => {
+					e.preventDefault();
+					signIn({ username, password });
+				}
+				return (
+				<div>
+					<h1>Login</h1>
+					<form onSubmit={onSubmit}>
+						<input type="text" placeholder="username" 
+							value={username} onChange={e => setUsername(e.target.value)} /><br/>
+						<input type="password" placeholder="password" 
+							value={password} onChange={e => setPassword(e.target.value)} /><br/>
+						<button type="submit">LOGIN</button>
+						<p style={{color:'red'}}>{error}</p>
+					</form>
+				</div>
+				)
+			}}
+		</AuthContext>
+	);
+};
+
+const ProtectedRoute = ({ component: Component, ...rest }) => (
+	<Route {...rest} render={(params) => (
+		<AuthContext>
+		{({ user }) => user 
+				? <Component {...params} /> 
+				: <Redirect to="/login" />}
+		</AuthContext>
+	)} 
+	/>
+);
+
+const App = () => {
+	return (
+		<Switch>
+			<ProtectedRoute path="/" exact component={HomePage} />
+			<Route path="/login" component={LoginPage} />
+		</Switch>
+	);
 }
 
 export default App;
